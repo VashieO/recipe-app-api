@@ -38,6 +38,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
 
+    def _params_to_ints(self, qs):
+        return list(map(int, qs.split(',')))
+
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user).order_by('-id')
 
@@ -70,3 +73,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    def filter_queryset(self, queryset):
+        tags = self.request.query_params.get('tags')
+        ingredients = self.request.query_params.get('ingredients')
+
+        if tags:
+            tag_ids = self._params_to_ints(tags)
+            queryset = queryset.filter(tags__id__in=tag_ids).distinct()
+        if ingredients:
+            ingredient_ids = self._params_to_ints(ingredients)
+            queryset = queryset.filter(ingredients__id__in=ingredient_ids)\
+                .distinct()
+
+        return queryset
