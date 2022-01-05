@@ -16,10 +16,19 @@ class BaseRecipeAttrVieSet(viewsets.GenericViewSet,
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user).order_by('-name')
+        return self.queryset.filter(user=self.request.user)\
+            .order_by('-name').distinct()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        assigned_only = bool(
+            int(self.request.query_params.get('assigned_only', 0))
+        )
+        if assigned_only:
+            queryset = queryset.filter(recipe__isnull=False)
+        return queryset
 
 
 class TagViewSet(BaseRecipeAttrVieSet):
